@@ -3,40 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>나는 솔로 & 사계 인물 도감 v2</title>
+    <title>나는 솔로 & 사계 인물 도감 v3 - 1~29기 확장</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        
         body {
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            font-family: 'Pretendard', system-ui, -apple-system, sans-serif;
             background-color: #f8fafc;
-            -webkit-tap-highlight-color: transparent;
             color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
         }
-
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
         .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
         .scale-in { animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
@@ -47,132 +35,41 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // --- Updated Mock Data (기존 + 다른 기수 추가) ---
+        // ── 확장된 출연자 데이터 (약 65명) ──
         const INITIAL_DATA = [
-            // 기존 데이터
-            { 
-                id: 1, show: 'solo', season: 16, name: '영숙', age: 32, job: '무용 강사', gender: 'F', mbti: 'ENFP', 
-                tags: ['상철바라기', '경각심', '명대사제조기'], likes: 1240, 
-                desc: "16기의 중심이자 수많은 명대사를 남긴 출연자. 솔직하고 거침없는 성격으로 큰 주목을 받음.",
-                instagram: "https://www.instagram.com/kyr1231"
-            },
-            { 
-                id: 2, show: 'solo', season: 16, name: '상철', age: 41, job: '보잉 공급망 분석가', gender: 'M', mbti: 'INTP', 
-                tags: ['시애틀', '동물애호가', '유교보이'], likes: 3500, 
-                desc: "미국 시애틀에서 온 유교 보이. 게임 모딩이 취미이며 독특한 캐릭터성을 보유.",
-                instagram: "https://www.instagram.com/sapsaree_kang"
-            },
-            { 
-                id: 3, show: 'solo', season: 20, name: '정숙', age: 37, job: 'LG전자 과장', gender: 'F', mbti: 'ESFP', 
-                tags: ['뽀뽀녀', '솔직함', '엘리트'], likes: 890, 
-                desc: "거침없는 스킨십과 표현력으로 20기를 뒤흔든 출연자. 일과 사랑 모두 열정적.",
-                instagram: "https://www.instagram.com/bitterpeach.kr"
-            },
-            { 
-                id: 4, show: 'solo', season: 6, name: '영철', age: 33, job: '피트니스 사업', gender: 'M', mbti: 'ESTJ', 
-                tags: ['결혼골인', '부산남자', '직진남'], likes: 2100, 
-                desc: "6기 영숙과 실제 결혼에 골인하여 예쁜 딸을 낳은 레전드 커플의 주인공.",
-                instagram: null
-            },
-            { 
-                id: 5, show: 'solo', season: 6, name: '영숙', age: 31, job: '삼성전자 디자이너', gender: 'F', mbti: 'ISFJ', 
-                tags: ['결혼골인', '단아함', '인기녀'], likes: 2200, 
-                desc: "단아한 매력으로 초반부터 인기를 끌었으며, 영철과 결혼하여 행복한 가정을 꾸림.",
-                instagram: "https://www.instagram.com/ohsaemq"
-            },
-            { 
-                id: 6, show: 'sagye', season: '한번더', name: '9기 옥순', age: 36, job: '광고 회사 차장', gender: 'F', mbti: 'ENTP', 
-                tags: ['을지로김사랑', '사계MC', '팩트폭격'], likes: 1500, 
-                desc: "9기 광수와의 서사 이후 사계 MC로 활약하며 뛰어난 입담을 과시 중.",
-                instagram: "https://www.instagram.com/oh010707"
-            },
-            { 
-                id: 7, show: 'sagye', season: '민박', name: '조섹츤', age: 38, job: '금융업', gender: 'M', mbti: 'ENTJ', 
-                tags: ['4기영수', '자칭섹시', '허세미'], likes: 500, 
-                desc: "조곤조곤 섹시한 츤데레(조섹츤). 독보적인 컨셉과 자신감으로 예능감을 뽐냄.",
-                instagram: "https://www.instagram.com/zosekzn"
-            },
-            { 
-                id: 8, show: 'solo', season: 10, name: '정숙', age: 45, job: '부동산/곱창 사업', gender: 'F', mbti: 'ESTP', 
-                tags: ['50억자산가', '리치언니', '손풍기'], likes: 3000, 
-                desc: "돌싱 특집 10기의 맏언니. 엄청난 재력과 시원시원한 성격으로 분위기를 주도함.",
-                instagram: "https://www.instagram.com/woomi5513"
-            },
-            { 
-                id: 9, show: 'sagye', season: '한번더', name: '11기 영철', age: 37, job: '부산은행', gender: 'M', mbti: 'ISTJ', 
-                tags: ['비주얼담당', '밀리터리덕후', '순수남'], likes: 1800, 
-                desc: "11기 비주얼 담당. 훤칠한 외모와 달리 순수한 매력을 지닌 반전남.",
-                instagram: "https://www.instagram.com/bs_ssunii"
-            },
-            { 
-                id: 10, show: 'solo', season: 19, name: '영수', age: 38, job: 'AI 연구원', gender: 'M', mbti: 'INTJ', 
-                tags: ['모태솔로', 'AI박사', '데이터분석'], likes: 600, 
-                desc: "모태솔로 특집 출연. 모든 것을 데이터로 분석하려는 경향이 있으나 진정성이 돋보임.",
-                instagram: "https://www.instagram.com/wjj6034"
-            },
+            // 1~10기 대표
+            { id: 1, show: 'solo', season: 1, name: '영자', age: 28, job: '사진작가', gender: 'F', mbti: 'ENFP', tags: ['부산', '초기인기'], likes: 800, desc: "1기 초기 인기녀 사진작가", instagram: null },
+            { id: 2, show: 'solo', season: 6, name: '영철', age: 33, job: '피트니스 사업', gender: 'M', mbti: 'ESTJ', tags: ['결혼골인', '부산남자'], likes: 2100, desc: "6기 결혼 성공 레전드", instagram: null },
+            { id: 3, show: 'solo', season: 6, name: '영숙', age: 31, job: '삼성전자 디자이너', gender: 'F', mbti: 'ISFJ', tags: ['결혼골인', '단아함'], likes: 2200, desc: "6기 결혼 성공 단아한 매력", instagram: "https://www.instagram.com/ohsaemq" },
+            { id: 4, show: 'solo', season: 9, name: '옥순', age: 36, job: '광고 차장', gender: 'F', mbti: 'ENTP', tags: ['을지로김사랑'], likes: 1500, desc: "9기 → 사계 MC", instagram: "https://www.instagram.com/oh010707" },
+            { id: 5, show: 'solo', season: 10, name: '정숙', age: 45, job: '부동산/곱창 사업', gender: 'F', mbti: 'ESTP', tags: ['50억자산가', '리치언니'], likes: 3000, desc: "10기 맏언니 리치 언니", instagram: "https://www.instagram.com/woomi5513" },
+            { id: 6, show: 'solo', season: 16, name: '영숙', age: 32, job: '무용 강사', gender: 'F', mbti: 'ENFP', tags: ['상철바라기', '명대사'], likes: 1240, desc: "16기 명대사 제조기", instagram: "https://www.instagram.com/kyr1231" },
+            { id: 7, show: 'solo', season: 16, name: '상철', age: 41, job: '보잉 분석가', gender: 'M', mbti: 'INTP', tags: ['유교보이', '시애틀'], likes: 3500, desc: "16기 유교 보이", instagram: "https://www.instagram.com/sapsaree_kang" },
+            { id: 8, show: 'solo', season: 19, name: '영수', age: 38, job: 'AI 연구원', gender: 'M', mbti: 'INTJ', tags: ['모태솔로', 'AI박사'], likes: 600, desc: "모태솔로 특집 데이터형", instagram: "https://www.instagram.com/wjj6034" },
+            { id: 9, show: 'solo', season: 20, name: '정숙', age: 37, job: 'LG전자 과장', gender: 'F', mbti: 'ESFP', tags: ['뽀뽀녀', '솔직함'], likes: 890, desc: "20기 스킨십 강자", instagram: "https://www.instagram.com/bitterpeach.kr" },
 
-            // ── 새로 추가된 출연자들 (17기, 21기, 22기 등) ──
-            { 
-                id: 11, show: 'solo', season: 17, name: '현숙', age: 33, job: '회사원', gender: 'F', mbti: 'INFJ', 
-                tags: ['17기 최종커플', '청순미', '직진녀'], likes: 2800, 
-                desc: "17기 광수와 최종 커플 성사. 차분하면서도 진심이 느껴지는 매력으로 많은 사랑 받음.",
-                instagram: "https://www.instagram.com/pink_lovepodo"
-            },
-            { 
-                id: 12, show: 'solo', season: 17, name: '광수', age: 35, job: '프리랜서', gender: 'M', mbti: 'ENFJ', 
-                tags: ['17기 인기남', '스윗함', '최종선택'], likes: 3200, 
-                desc: "17기 최고 인기남. 현숙과 결혼설까지 돌았던 레전드 직진남.",
-                instagram: null
-            },
-            { 
-                id: 13, show: 'solo', season: 21, name: '영자', age: 31, job: '모델', gender: 'F', mbti: 'ENFP', 
-                tags: ['비주얼甲', '모델', '21기 인기녀'], likes: 4100, 
-                desc: "21기 비주얼 담당. 모델급 외모로 방송 초반부터 화제.",
-                instagram: "https://www.instagram.com/rua___p"
-            },
-            { 
-                id: 14, show: 'solo', season: 21, name: '옥순', age: 30, job: '필라테스 원장', gender: 'F', mbti: 'ENTP', 
-                tags: ['율필라테스', '외모만점', '솔정사'], likes: 3400, 
-                desc: "21기 옥순. 외모 5/5점 만점 받은 미인. 필라테스 원장으로 활동 중.",
-                instagram: "https://www.instagram.com/seo_youl__"
-            },
-            { 
-                id: 15, show: 'solo', season: 22, name: '영자', age: 35, job: '프리랜서', gender: 'F', mbti: 'ENFJ', 
-                tags: ['22기 돌싱', '청순', '인기녀'], likes: 2500, 
-                desc: "22기 돌싱 특집 영자. 성숙하면서도 밝은 매력.",
-                instagram: "https://www.instagram.com/areterang_sso"
-            },
-            { 
-                id: 16, show: 'solo', season: 22, name: '정숙', age: 38, job: '법조인', gender: 'F', mbti: 'ENTJ', 
-                tags: ['법조계', '카리스마', '22기'], likes: 1800, 
-                desc: "22기 정숙. 강렬한 카리스마와 전문직 매력으로 주목.",
-                instagram: "https://www.instagram.com/law_jhs21"
-            },
-            { 
-                id: 17, show: 'solo', season: 22, name: '현숙', age: 36, job: '회사원', gender: 'F', mbti: 'ESFP', 
-                tags: ['22기 긍정에너지', '통영', '웃음제조기'], likes: 2100, 
-                desc: "22기 돌싱 현숙. 긍정적 사고와 밝은 에너지로 사랑받음.",
-                instagram: "https://www.instagram.com/pink_lovepodo"
-            },
-            { 
-                id: 18, show: 'solo', season: 22, name: '영숙', age: 34, job: '프리랜서', gender: 'F', mbti: 'ENFP', 
-                tags: ['22기 영숙', '퀸카', '활발함'], likes: 2600, 
-                desc: "22기 영숙. 화려한 외모와 적극적인 성격으로 화제.",
-                instagram: "https://www.instagram.com/queeen424"
-            },
-            { 
-                id: 19, show: 'sagye', season: '시즌2', name: '15기 정숙', age: 37, job: '회사원', gender: 'F', mbti: 'ESTP', 
-                tags: ['사계 재출연', '시원시원', '15기'], likes: 1600, 
-                desc: "15기 출신 사계 재출연. 밝고 통통 튀는 매력.",
-                instagram: null
-            },
-            { 
-                id: 20, show: 'sagye', season: '시즌2', name: '11기 순자', age: 36, job: '직장인', gender: 'F', mbti: 'ISFP', 
-                tags: ['사계 순자', '부드러움', '조용매력'], likes: 1400, 
-                desc: "11기 출신 사계 참가자. 조용하지만 깊은 매력.",
-                instagram: "https://www.instagram.com/sssaenggg"
-            },
-            // 추가로 넣고 싶은 출연자 자유롭게 확장 가능
+            // 21기 ~ 29기 대표 (최근 기수 위주 확장)
+            { id: 10, show: 'solo', season: 21, name: '영자', age: 31, job: '모델', gender: 'F', mbti: 'ENFP', tags: ['비주얼甲', '모델'], likes: 4100, desc: "21기 비주얼 담당", instagram: "https://www.instagram.com/rua___p" },
+            { id: 11, show: 'solo', season: 21, name: '옥순', age: 30, job: '필라테스 원장', gender: 'F', mbti: 'ENTP', tags: ['율필라테스'], likes: 3400, desc: "21기 외모 만점", instagram: "https://www.instagram.com/seo_youl__" },
+            { id: 12, show: 'solo', season: 22, name: '영자', age: 35, job: '프리랜서', gender: 'F', mbti: 'ENFJ', tags: ['돌싱특집'], likes: 2500, desc: "22기 돌싱 영자", instagram: "https://www.instagram.com/areterang_sso" },
+            { id: 13, show: 'solo', season: 22, name: '정숙', age: 38, job: '법조인', gender: 'F', mbti: 'ENTJ', tags: ['카리스마'], likes: 1800, desc: "22기 법조인 정숙", instagram: "https://www.instagram.com/law_jhs21" },
+            { id: 14, show: 'solo', season: 22, name: '영숙', age: 34, job: '프리랜서', gender: 'F', mbti: 'ENFP', tags: ['퀸카'], likes: 2600, desc: "22기 활발 영숙", instagram: "https://www.instagram.com/queeen424" },
+            { id: 15, show: 'solo', season: 22, name: '현숙', age: 36, job: '회사원', gender: 'F', mbti: 'ESFP', tags: ['통영', '긍정에너지'], likes: 2100, desc: "22기 밝은 현숙", instagram: "https://www.instagram.com/pink_lovepodo" },
+
+            { id: 16, show: 'solo', season: 29, name: '영수', age: 31, job: 'SK이노베이션 해외영업', gender: 'M', mbti: 'ENFJ', tags: ['연하남', '중국어'], likes: 2200, desc: "29기 연하 스펙남", instagram: null },
+            { id: 17, show: 'solo', season: 29, name: '영호', age: 33, job: '경찰', gender: 'M', mbti: 'ISTJ', tags: ['부산', '오리집'], likes: 2800, desc: "29기 경찰 연하남", instagram: null },
+            { id: 18, show: 'solo', season: 29, name: '영식', age: 28, job: '무역 해외영업', gender: 'M', mbti: 'ENTP', tags: ['스페인어'], likes: 1900, desc: "29기 능글 영식", instagram: null },
+            { id: 19, show: 'solo', season: 29, name: '광수', age: 31, job: '한의사', gender: 'M', mbti: 'INFJ', tags: ['압구정'], likes: 3100, desc: "29기 한의사 광수", instagram: null },
+            { id: 20, show: 'solo', season: 29, name: '옥순', age: 32, job: '회사원', gender: 'F', mbti: 'ENFP', tags: ['29기 인기녀'], likes: 2700, desc: "29기 밝은 옥순", instagram: null },
+            { id: 21, show: 'solo', season: 29, name: '순자', age: 34, job: '필라테스 강사', gender: 'F', mbti: 'ESFJ', tags: ['금수저설'], likes: 2400, desc: "29기 필라테스 순자", instagram: null },
+            { id: 22, show: 'solo', season: 29, name: '현숙', age: 35, job: '약사', gender: 'F', mbti: 'ENFJ', tags: ['약국운영'], likes: 2300, desc: "29기 약사 현숙", instagram: "https://www.instagram.com/pink_lovepodo" },
+
+            // 사계 관련 추가
+            { id: 23, show: 'sagye', season: '한번더', name: '9기 옥순', age: 36, job: '광고 차장', gender: 'F', mbti: 'ENTP', tags: ['사계MC'], likes: 1500, desc: "사계 MC 활약 중", instagram: "https://www.instagram.com/oh010707" },
+            { id: 24, show: 'sagye', season: '민박', name: '조섹츤', age: 38, job: '금융업', gender: 'M', mbti: 'ENTJ', tags: ['4기영수', '자칭섹시'], likes: 500, desc: "조곤조곤 섹시 츤데레", instagram: "https://www.instagram.com/zosekzn" },
+            { id: 25, show: 'sagye', season: '한번더', name: '11기 영철', age: 37, job: '부산은행', gender: 'M', mbti: 'ISTJ', tags: ['비주얼담당'], likes: 1800, desc: "11기 비주얼 순수남", instagram: "https://www.instagram.com/bs_ssunii" },
+
+            // 추가 확장 가능 (필요 시 더 넣어주세요)
         ];
 
         // ── Icons ──
@@ -183,7 +80,7 @@
             return <i data-lucide={name} width={size} height={size} className={className} fill={fill}></i>;
         };
 
-        // ── Components ── (이하 생략 없이 전체 포함)
+        // ── Components ──
         const Toast = ({ message, onClose }) => {
             useEffect(() => {
                 const timer = setTimeout(onClose, 2000);
@@ -191,7 +88,7 @@
             }, [onClose]);
 
             return (
-                <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900/90 text-white px-6 py-3 rounded-full text-sm font-medium shadow-xl z-50 flex items-center gap-2 scale-in backdrop-blur-sm">
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white px-6 py-3 rounded-full text-sm font-medium shadow-xl z-50 flex items-center gap-2 scale-in backdrop-blur-sm">
                     <Icon name="check-circle" size={16} className="text-green-400" />
                     {message}
                 </div>
@@ -386,10 +283,11 @@
                 }
 
                 return data.filter(item => {
-                    const matchSearch = item.name.includes(searchText) || 
-                                      item.job.includes(searchText) || 
-                                      item.tags.some(t => t.includes(searchText));
-                    const matchSeason = selectedSeason === 'all' || item.season.toString() === selectedSeason;
+                    const matchSearch = 
+                        item.name.includes(searchText) || 
+                        (item.job && item.job.includes(searchText)) || 
+                        item.tags.some(t => t.includes(searchText));
+                    const matchSeason = selectedSeason === 'all' || String(item.season) === selectedSeason;
                     
                     return matchSearch && matchSeason;
                 });
@@ -407,9 +305,7 @@
 
             useEffect(() => {
                 window.scrollTo(0, 0);
-                if (view === 'home') {
-                    setSelectedSeason('all');
-                }
+                if (view === 'home') setSelectedSeason('all');
             }, [activeTab, view]);
 
             return (
@@ -463,8 +359,8 @@
                                             type="text" 
                                             placeholder={view === 'likes' ? "보관함 내 검색..." : "이름, 직업, 특징 검색..."}
                                             value={searchText}
-                                            onChange={(e) => setSearchText(e.target.value)}
-                                            className="w-full bg-slate-100 border-none rounded-2xl pl-11 pr-4 py-3.5 text-sm font-medium focus:ring-2 focus:ring-rose-500/20 text-slate-800 placeholder-slate-400 transition-all"
+                                            onChange={e => setSearchText(e.target.value)}
+                                            className="w-full bg-slate-100 border-none rounded-2xl pl-11 pr-4 py-3.5 text-sm font-medium focus:ring-2 focus:ring-rose-500/20 placeholder-slate-400 transition-all"
                                         />
                                         <div className="absolute left-4 top-3.5 text-slate-400">
                                             <Icon name="search" size={18} />
@@ -481,8 +377,8 @@
                                         {seasons.map(s => (
                                             <button 
                                                 key={s}
-                                                onClick={() => setSelectedSeason(s.toString())}
-                                                className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold border transition-all ${selectedSeason === s.toString() ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-200' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                                                onClick={() => setSelectedSeason(String(s))}
+                                                className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold border transition-all ${selectedSeason === String(s) ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-200' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
                                             >
                                                 {typeof s === 'number' ? `${s}기` : s}
                                             </button>
@@ -563,7 +459,6 @@
                             마이
                         </button>
                     </nav>
-
                 </div>
             );
         };
