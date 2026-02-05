@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>나는 솔로 & 사계 인물 도감 v2</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: #f8fafc; /* 조금 더 밝은 배경 */
+            -webkit-tap-highlight-color: transparent;
+            color: #1e293b;
+        }
+
+        /* 스크롤바 숨기기 */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 애니메이션 */
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .scale-in { animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes scaleIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Mock Data ---
+        const INITIAL_DATA = [
+            { id: 1, show: 'solo', season: 16, name: '영숙', age: 32, job: '무용 강사', gender: 'F', mbti: 'ENFP', tags: ['상철바라기', '경각심', '명대사제조기'], likes: 1240, desc: "16기의 중심이자 수많은 명대사를 남긴 출연자. 솔직하고 거침없는 성격으로 큰 주목을 받음." },
+            { id: 2, show: 'solo', season: 16, name: '상철', age: 41, job: '보잉 공급망 분석가', gender: 'M', mbti: 'INTP', tags: ['시애틀', '동물애호가', '유교보이'], likes: 3500, desc: "미국 시애틀에서 온 유교 보이. 게임 모딩이 취미이며 독특한 캐릭터성을 보유." },
+            { id: 3, show: 'solo', season: 20, name: '정숙', age: 37, job: 'LG전자 과장', gender: 'F', mbti: 'ESFP', tags: ['뽀뽀녀', '솔직함', '엘리트'], likes: 890, desc: "거침없는 스킨십과 표현력으로 20기를 뒤흔든 출연자. 일과 사랑 모두 열정적." },
+            { id: 4, show: 'solo', season: 6, name: '영철', age: 33, job: '피트니스 사업', gender: 'M', mbti: 'ESTJ', tags: ['결혼골인', '부산남자', '직진남'], likes: 2100, desc: "6기 영숙과 실제 결혼에 골인하여 예쁜 딸을 낳은 레전드 커플의 주인공." },
+            { id: 5, show: 'solo', season: 6, name: '영숙', age: 31, job: '삼성전자 디자이너', gender: 'F', mbti: 'ISFJ', tags: ['결혼골인', '단아함', '인기녀'], likes: 2200, desc: "단아한 매력으로 초반부터 인기를 끌었으며, 영철과 결혼하여 행복한 가정을 꾸림." },
+            { id: 6, show: 'sagye', season: '한번더', name: '9기 옥순', age: 36, job: '광고 회사 차장', gender: 'F', mbti: 'ENTP', tags: ['을지로김사랑', '사계MC', '팩트폭격'], likes: 1500, desc: "9기 광수와의 서사 이후 사계 MC로 활약하며 뛰어난 입담을 과시 중." },
+            { id: 7, show: 'sagye', season: '민박', name: '조섹츤', age: 38, job: '금융업', gender: 'M', mbti: 'ENTJ', tags: ['4기영수', '자칭섹시', '허세미'], likes: 500, desc: "조곤조곤 섹시한 츤데레(조섹츤). 독보적인 컨셉과 자신감으로 예능감을 뽐냄." },
+            { id: 8, show: 'solo', season: 10, name: '정숙', age: 45, job: '부동산/곱창 사업', gender: 'F', mbti: 'ESTP', tags: ['50억자산가', '리치언니', '손풍기'], likes: 3000, desc: "돌싱 특집 10기의 맏언니. 엄청난 재력과 시원시원한 성격으로 분위기를 주도함." },
+            { id: 9, show: 'sagye', season: '한번더', name: '11기 영철', age: 37, job: '부산은행', gender: 'M', mbti: 'ISTJ', tags: ['비주얼담당', '밀리터리덕후', '순수남'], likes: 1800, desc: "11기 비주얼 담당. 훤칠한 외모와 달리 순수한 매력을 지닌 반전남." },
+            { id: 10, show: 'solo', season: 19, name: '영수', age: 38, job: 'AI 연구원', gender: 'M', mbti: 'INTJ', tags: ['모태솔로', 'AI박사', '데이터분석'], likes: 600, desc: "모태솔로 특집 출연. 모든 것을 데이터로 분석하려는 경향이 있으나 진정성이 돋보임." },
+        ];
+
+        // --- Icons ---
+        const Icon = ({ name, size = 20, className, fill }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} width={size} height={size} className={className} fill={fill}></i>;
+        };
+
+        // --- Components ---
+
+        // 상단 알림 메시지 (Toast)
+        const Toast = ({ message, onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 2000);
+                return () => clearTimeout(timer);
+            }, [onClose]);
+
+            return (
+                <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900/90 text-white px-6 py-3 rounded-full text-sm font-medium shadow-xl z-50 flex items-center gap-2 scale-in backdrop-blur-sm">
+                    <Icon name="check-circle" size={16} className="text-green-400" />
+                    {message}
+                </div>
+            );
+        };
+
+        const Badge = ({ children, color = 'gray' }) => {
+            const colors = {
+                gray: 'bg-slate-100 text-slate-600',
+                pink: 'bg-rose-50 text-rose-600 border border-rose-100',
+                blue: 'bg-sky-50 text-sky-600 border border-sky-100',
+                purple: 'bg-violet-50 text-violet-600 border border-violet-100',
+            };
+            return (
+                <span className={`px-2.5 py-1 rounded-md text-[11px] font-semibold ${colors[color]} mr-1.5 mb-1.5 inline-block`}>
+                    #{children}
+                </span>
+            );
+        };
+
+        const CharacterCard = ({ char, onClick, toggleLike, isLiked }) => {
+            return (
+                <div 
+                    onClick={() => onClick(char)}
+                    className="bg-white rounded-2xl p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-slate-100 relative active:scale-[0.98] transition-all duration-200 cursor-pointer hover:shadow-md"
+                >
+                    <div className="flex gap-4">
+                        {/* Avatar */}
+                        <div className={`w-[72px] h-[72px] rounded-2xl flex items-center justify-center text-2xl font-bold shadow-sm flex-shrink-0 relative overflow-hidden ${char.gender === 'F' ? 'bg-rose-50 text-rose-500' : 'bg-sky-50 text-sky-500'}`}>
+                            {char.name.substring(0, 1)}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent"></div>
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${char.show === 'solo' ? 'bg-slate-100 text-slate-500' : 'bg-amber-100 text-amber-700'}`}>
+                                            {char.show === 'solo' ? `${char.season}기` : `사계-${char.season}`}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 font-medium">{char.mbti}</span>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-800 leading-tight">{char.name}</h3>
+                                </div>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); toggleLike(char); }}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${isLiked ? 'text-rose-500 bg-rose-50' : 'text-slate-300 hover:bg-slate-50'}`}
+                                >
+                                    <Icon name="heart" size={18} className={isLiked ? "fill-rose-500" : ""} />
+                                </button>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1 truncate font-medium">{char.job} · {char.age}세</p>
+                        </div>
+                    </div>
+                    
+                    {/* Tags Footer */}
+                    <div className="mt-3 pt-3 border-t border-slate-50 flex flex-wrap gap-1">
+                         {char.tags.slice(0, 3).map((tag, idx) => (
+                             <span key={idx} className="text-[10px] text-slate-500 bg-slate-50 px-2 py-1 rounded-full">#{tag}</span>
+                         ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const Modal = ({ char, onClose, isLiked, toggleLike }) => {
+            if (!char) return null;
+
+            return (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose}>
+                    <div 
+                        className="bg-white w-full max-w-md h-[90vh] sm:h-[80vh] sm:rounded-3xl rounded-t-3xl relative flex flex-col shadow-2xl slide-up overflow-hidden" 
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Sticky Header inside Modal */}
+                        <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/30 to-transparent">
+                            <button onClick={onClose} className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/30 transition-colors">
+                                <Icon name="chevron-down" size={24} />
+                            </button>
+                            <button onClick={() => toggleLike(char)} className={`p-2 backdrop-blur-md rounded-full transition-colors ${isLiked ? 'bg-rose-500 text-white shadow-lg' : 'bg-white/20 text-white'}`}>
+                                <Icon name="heart" size={20} className={isLiked ? "fill-current" : ""} />
+                            </button>
+                        </div>
+
+                        {/* Profile Cover (Color placeholder) */}
+                        <div className={`h-48 w-full flex-shrink-0 flex items-center justify-center ${char.gender === 'F' ? 'bg-gradient-to-br from-rose-200 to-pink-100' : 'bg-gradient-to-br from-sky-200 to-blue-100'}`}>
+                             <div className="text-8xl opacity-20 font-black tracking-tighter mix-blend-overlay select-none">
+                                {char.season}
+                             </div>
+                        </div>
+
+                        {/* Content Body */}
+                        <div className="flex-1 overflow-y-auto hide-scrollbar -mt-6 bg-white rounded-t-3xl relative px-6 pt-0 pb-10">
+                            {/* Avatar Overlay */}
+                            <div className="flex justify-center -mt-10 mb-4">
+                                <div className={`w-24 h-24 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-3xl font-bold ${char.gender === 'F' ? 'bg-rose-50 text-rose-500' : 'bg-sky-50 text-sky-500'}`}>
+                                    {char.name.substring(0, 1)}
+                                </div>
+                            </div>
+
+                            {/* Title Section */}
+                            <div className="text-center mb-8">
+                                <h2 className="text-2xl font-bold text-slate-800 flex items-center justify-center gap-1">
+                                    {char.name}
+                                    <span className="text-base font-normal text-slate-400">({char.age})</span>
+                                </h2>
+                                <p className="text-sm font-medium text-slate-500 mt-1">{char.job}</p>
+                                <div className="flex justify-center gap-2 mt-3">
+                                    <span className="px-3 py-1 bg-slate-900 text-white text-xs rounded-full font-bold">
+                                        {char.show === 'solo' ? `${char.season}기` : `사계 ${char.season}`}
+                                    </span>
+                                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs rounded-full font-bold border border-slate-200">
+                                        MBTI: {char.mbti}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Info Sections */}
+                            <div className="space-y-8">
+                                <section>
+                                    <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                        <Icon name="quote" size={14} className="text-slate-400" />
+                                        한줄 소개
+                                    </h3>
+                                    <p className="text-slate-600 text-sm leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        {char.desc}
+                                    </p>
+                                </section>
+
+                                <section>
+                                    <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                                        <Icon name="hash" size={14} className="text-slate-400" />
+                                        매력 포인트
+                                    </h3>
+                                    <div className="flex flex-wrap">
+                                        {char.tags.map(tag => (
+                                            <Badge key={tag} color="purple">{tag}</Badge>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <button className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-200 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                                    <Icon name="instagram" size={18} />
+                                    인스타그램 구경가기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [view, setView] = useState('home'); // 'home', 'likes', 'mypage'
+            const [activeTab, setActiveTab] = useState('solo');
+            const [searchText, setSearchText] = useState('');
+            const [selectedSeason, setSelectedSeason] = useState('all');
+            const [selectedChar, setSelectedChar] = useState(null);
+            
+            // Likes State (Set을 사용하여 중복 방지, 실제 앱에선 localStorage 사용 권장)
+            const [likedIds, setLikedIds] = useState(new Set());
+            const [toastMsg, setToastMsg] = useState(null);
+
+            const toggleLike = (char) => {
+                const newLikes = new Set(likedIds);
+                let msg = '';
+                
+                if (newLikes.has(char.id)) {
+                    newLikes.delete(char.id);
+                    msg = '보관함에서 삭제되었습니다.';
+                } else {
+                    newLikes.add(char.id);
+                    msg = '보관함에 저장되었습니다.';
+                }
+                setLikedIds(newLikes);
+                setToastMsg(msg);
+            };
+
+            // 필터링
+            const filteredData = useMemo(() => {
+                let data = INITIAL_DATA;
+
+                // 뷰에 따른 1차 필터링
+                if (view === 'likes') {
+                    data = data.filter(item => likedIds.has(item.id));
+                } else {
+                    // 홈 화면일 때는 탭(솔로/사계) 구분
+                    data = data.filter(item => item.show === activeTab);
+                }
+
+                // 검색 및 시즌 필터링 (홈, 좋아요 화면 공통)
+                return data.filter(item => {
+                    const matchSearch = item.name.includes(searchText) || 
+                                      item.job.includes(searchText) || 
+                                      item.tags.some(t => t.includes(searchText));
+                    const matchSeason = selectedSeason === 'all' || item.season.toString() === selectedSeason;
+                    
+                    return matchSearch && matchSeason;
+                });
+            }, [view, activeTab, searchText, selectedSeason, likedIds]);
+
+            // 기수 목록
+            const seasons = useMemo(() => {
+                // 현재 뷰에 있는 데이터 기준이 아니라, 전체 데이터 기준 또는 탭 기준 등 정책 결정 필요
+                // 여기서는 '현재 탭'에 존재하는 모든 기수를 보여줌
+                const sourceData = view === 'likes' ? INITIAL_DATA : INITIAL_DATA.filter(d => d.show === activeTab);
+                const uniqueSeasons = [...new Set(sourceData.map(d => d.season))];
+                
+                return uniqueSeasons.sort((a, b) => {
+                    if (typeof a === 'number' && typeof b === 'number') return a - b;
+                    return String(a).localeCompare(String(b));
+                });
+            }, [activeTab, view]);
+
+            // 탭/뷰 변경 시 스크롤 상단 이동 및 필터 초기화
+            useEffect(() => {
+                window.scrollTo(0, 0);
+                if (view === 'home') {
+                    setSelectedSeason('all');
+                }
+            }, [activeTab, view]);
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen bg-slate-50 pb-24 relative shadow-2xl overflow-hidden border-x border-slate-200">
+                    
+                    {/* Toast Notification */}
+                    {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
+
+                    {/* Header */}
+                    <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-100">
+                        <div className="flex items-center justify-between px-5 h-14">
+                            <h1 className="font-extrabold text-xl tracking-tight text-slate-800 flex items-center gap-2">
+                                {view === 'home' && <span className="text-rose-500">SOLO</span>}
+                                {view === 'likes' && <span className="text-rose-500">MY</span>}
+                                {view === 'mypage' && <span className="text-rose-500">ME</span>}
+                                <span className="text-slate-800">
+                                    {view === 'home' ? '인물도감' : view === 'likes' ? '보관함' : '마이페이지'}
+                                </span>
+                            </h1>
+                            {view === 'home' && (
+                                <button className="p-2 text-slate-400 hover:text-slate-800 transition-colors">
+                                    <Icon name="bell" size={20} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Top Tabs (Only in Home View) */}
+                        {view === 'home' && (
+                            <div className="flex px-4 gap-6">
+                                <button 
+                                    onClick={() => setActiveTab('solo')}
+                                    className={`py-3 text-sm font-bold relative transition-colors ${activeTab === 'solo' ? 'text-slate-900' : 'text-slate-400'}`}
+                                >
+                                    나는 솔로
+                                    {activeTab === 'solo' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-0.5 bg-slate-900 rounded-full"></div>}
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('sagye')}
+                                    className={`py-3 text-sm font-bold relative transition-colors ${activeTab === 'sagye' ? 'text-slate-900' : 'text-slate-400'}`}
+                                >
+                                    나솔 사계
+                                    {activeTab === 'sagye' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-0.5 bg-slate-900 rounded-full"></div>}
+                                </button>
+                            </div>
+                        )}
+                    </header>
+
+                    {/* Body Content */}
+                    <div className="fade-in">
+                        {view !== 'mypage' ? (
+                            <>
+                                {/* Search & Filter */}
+                                <div className="p-4 space-y-3 bg-white border-b border-slate-100">
+                                    <div className="relative">
+                                        <input 
+                                            type="text" 
+                                            placeholder={view === 'likes' ? "보관함 내 검색..." : "이름, 직업, 특징 검색..."}
+                                            value={searchText}
+                                            onChange={(e) => setSearchText(e.target.value)}
+                                            className="w-full bg-slate-100 border-none rounded-2xl pl-11 pr-4 py-3.5 text-sm font-medium focus:ring-2 focus:ring-rose-500/20 text-slate-800 placeholder-slate-400 transition-all"
+                                        />
+                                        <div className="absolute left-4 top-3.5 text-slate-400">
+                                            <Icon name="search" size={18} />
+                                        </div>
+                                    </div>
+
+                                    {/* Chips */}
+                                    <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1 pt-1">
+                                        <button 
+                                            onClick={() => setSelectedSeason('all')}
+                                            className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold border transition-all ${selectedSeason === 'all' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                                        >
+                                            전체
+                                        </button>
+                                        {seasons.map(s => (
+                                            <button 
+                                                key={s}
+                                                onClick={() => setSelectedSeason(s.toString())}
+                                                className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold border transition-all ${selectedSeason === s.toString() ? 'bg-rose-500 text-white border-rose-500 shadow-md shadow-rose-200' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                                            >
+                                                {typeof s === 'number' ? `${s}기` : s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* List */}
+                                <main className="p-4 space-y-4 min-h-[50vh]">
+                                    {filteredData.length > 0 ? (
+                                        filteredData.map(char => (
+                                            <CharacterCard 
+                                                key={char.id} 
+                                                char={char} 
+                                                onClick={setSelectedChar}
+                                                toggleLike={toggleLike}
+                                                isLiked={likedIds.has(char.id)}
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                                            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                                <Icon name="search-x" size={24} className="text-slate-300" />
+                                            </div>
+                                            <p className="font-medium text-sm">찾으시는 출연자가 없어요.</p>
+                                        </div>
+                                    )}
+                                </main>
+                            </>
+                        ) : (
+                            /* My Page Placeholder */
+                            <div className="p-6 flex flex-col items-center justify-center min-h-[60vh] text-center">
+                                <div className="w-24 h-24 bg-gradient-to-tr from-rose-200 to-orange-100 rounded-full mb-6 flex items-center justify-center shadow-inner">
+                                    <Icon name="user" size={40} className="text-white" />
+                                </div>
+                                <h2 className="text-xl font-bold text-slate-800 mb-2">안녕하세요!</h2>
+                                <p className="text-slate-500 text-sm mb-8 max-w-[200px]">
+                                    나만의 최애 출연자를 모아보고 관리할 수 있는 페이지입니다.
+                                </p>
+                                <div className="w-full bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-4">
+                                    <div className="flex justify-between items-center py-2">
+                                        <span className="text-sm font-bold text-slate-700">내가 찜한 출연자</span>
+                                        <span className="text-rose-500 font-bold">{likedIds.size}명</span>
+                                    </div>
+                                </div>
+                                <button className="text-xs text-slate-400 underline">로그아웃</button>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Modal */}
+                    {selectedChar && (
+                        <Modal 
+                            char={selectedChar} 
+                            onClose={() => setSelectedChar(null)}
+                            isLiked={likedIds.has(selectedChar.id)}
+                            toggleLike={toggleLike}
+                        />
+                    )}
+
+                    {/* Bottom Navigation */}
+                    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 px-6 py-2 pb-6 z-40 flex justify-between items-center text-[10px] font-medium text-slate-400">
+                        <button 
+                            onClick={() => setView('home')}
+                            className={`flex flex-col items-center gap-1 p-2 flex-1 transition-colors ${view === 'home' ? 'text-rose-500' : 'hover:text-slate-600'}`}
+                        >
+                            <Icon name="home" size={24} className={view === 'home' ? "stroke-[2.5]" : "stroke-2"} />
+                            홈
+                        </button>
+                        <button 
+                            onClick={() => setView('likes')}
+                            className={`flex flex-col items-center gap-1 p-2 flex-1 transition-colors ${view === 'likes' ? 'text-rose-500' : 'hover:text-slate-600'}`}
+                        >
+                            <Icon name="heart" size={24} className={view === 'likes' ? "fill-current stroke-none" : "stroke-2"} />
+                            보관함
+                        </button>
+                        <button 
+                            onClick={() => setView('mypage')}
+                            className={`flex flex-col items-center gap-1 p-2 flex-1 transition-colors ${view === 'mypage' ? 'text-rose-500' : 'hover:text-slate-600'}`}
+                        >
+                            <Icon name="user" size={24} className={view === 'mypage' ? "fill-current stroke-none" : "stroke-2"} />
+                            마이
+                        </button>
+                    </nav>
+
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
